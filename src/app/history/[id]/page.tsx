@@ -31,7 +31,7 @@ export default function RunDetailPage({ params }: { params: Promise<{ id: string
   const [benchmarkResults, setBenchmarkResults] = useState<ProviderBenchmarkResult[]>([]);
   const [pricingProviderResults, setPricingProviderResults] = useState<PricingBenchmarkResult[]>([]);
   const [pricingTokenResults, setPricingTokenResults] = useState<TokenPriceResult[]>([]);
-  const [runMeta, setRunMeta] = useState<{ timestamp: number; chain: string; triggerType: string } | null>(null);
+  const [runMeta, setRunMeta] = useState<{ timestamp: number; chain: string; triggerType: string; walletAddress?: string } | null>(null);
 
   const [selectedTab, setSelectedTab] = useState<"overview" | "latency" | "completeness" | "reliability" | "throughput" | "pricing">(
     type === "pricing" ? "pricing" : "overview"
@@ -46,7 +46,7 @@ export default function RunDetailPage({ params }: { params: Promise<{ id: string
 
         if (data.type === "balances" && data.run) {
           setBenchmarkResults(data.run.results || []);
-          setRunMeta({ timestamp: data.run.timestamp, chain: data.run.chain, triggerType: data.run.triggerType });
+          setRunMeta({ timestamp: data.run.timestamp, chain: data.run.chain, triggerType: data.run.triggerType, walletAddress: data.run.walletAddress });
         } else if (data.type === "pricing" && data.run) {
           setPricingProviderResults(data.run.providerResults || []);
           setPricingTokenResults(data.run.tokenResults || []);
@@ -81,7 +81,11 @@ export default function RunDetailPage({ params }: { params: Promise<{ id: string
             {isBenchmark ? "Token Balance Benchmark" : "Pricing Accuracy Benchmark"}
           </h1>
           <p className="text-sm text-[#78716C] mt-0.5">
-            {formatDate(runMeta.timestamp)} &middot; {runMeta.chain} &middot; {runMeta.triggerType}
+            {formatDate(runMeta.timestamp)} &middot; {runMeta.chain}
+            {runMeta.walletAddress && (
+              <> &middot; <span className="font-mono">{runMeta.walletAddress.slice(0, 6)}...{runMeta.walletAddress.slice(-4)}</span></>
+            )}
+            {" "}&middot; {runMeta.triggerType}
           </p>
         </div>
       )}

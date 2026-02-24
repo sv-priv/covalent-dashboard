@@ -138,14 +138,15 @@ async function fetchMoralisPrices(
 
 async function fetchMobulaPrices(
   tokens: PricingToken[],
-  _chain: string,
+  chain: string,
   apiKey: string
 ): Promise<Map<string, number | null>> {
+  const chainConfig = SUPPORTED_CHAINS.find((c) => c.id === chain) || SUPPORTED_CHAINS[0];
   const results = new Map<string, number | null>();
 
   try {
     const addresses = tokens.map((t) => t.address).join(",");
-    const url = `https://api.mobula.io/api/1/market/multi-data?assets=${addresses}`;
+    const url = `https://api.mobula.io/api/1/market/multi-data?assets=${addresses}&blockchains=${chainConfig.mobulaChain}`;
 
     const res = await fetch(url, {
       headers: { Authorization: apiKey },

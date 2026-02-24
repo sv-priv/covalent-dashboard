@@ -21,6 +21,12 @@ function calculateLatencyStats(samples: number[]): LatencyStats {
   };
 }
 
+function isFieldPresent(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string" && value === "") return false;
+  return true;
+}
+
 function scoreCompleteness(tokens: TokenBalance[]) {
   if (tokens.length === 0) {
     return {
@@ -32,8 +38,12 @@ function scoreCompleteness(tokens: TokenBalance[]) {
     };
   }
 
-  const sampleSize = Math.min(tokens.length, 20);
-  const sample = tokens.slice(0, sampleSize);
+  // Prefer tokens that have a name/symbol — these are non-dust tokens where
+  // we'd actually expect providers to return full metadata.
+  const meaningful = tokens.filter((t) => t.symbol || t.name);
+  const pool = meaningful.length >= 5 ? meaningful : tokens;
+  const sampleSize = Math.min(pool.length, 20);
+  const sample = pool.slice(0, sampleSize);
 
   const fieldPresence: Record<string, number> = {};
   COMPLETENESS_FIELDS.forEach((field) => {
@@ -42,7 +52,7 @@ function scoreCompleteness(tokens: TokenBalance[]) {
 
   sample.forEach((token) => {
     COMPLETENESS_FIELDS.forEach((field) => {
-      if (token[field] !== undefined && token[field] !== null && token[field] !== "") {
+      if (isFieldPresent(token[field])) {
         fieldPresence[field]++;
       }
     });

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProviderName, PROVIDER_META, BenchmarkRun, ProviderBenchmarkResult, EnvKeyStatus, SUPPORTED_CHAINS, BenchmarkScenario, PricingBenchmarkRun, PRICING_TEST_TOKENS } from "@/lib/types";
+import { ProviderName, PROVIDER_META, BenchmarkRun, ProviderBenchmarkResult, EnvKeyStatus, SUPPORTED_CHAINS, BenchmarkScenario, PricingBenchmarkRun, getPricingTokensForChain } from "@/lib/types";
 import ApiKeyModal from "@/components/ApiKeyModal";
 import ProviderCard from "@/components/ProviderCard";
 import SummaryTable from "@/components/SummaryTable";
@@ -116,7 +116,7 @@ export default function BenchmarkPage() {
 
       if (scenarios.pricing) {
         step++;
-        setProgress(`[${step}/${totalSteps}] Testing pricing accuracy for ${PRICING_TEST_TOKENS.length} tokens...`);
+        setProgress(`[${step}/${totalSteps}] Testing pricing accuracy for ${getPricingTokensForChain(chain).length} tokens...`);
 
         const pricingResponse = await fetch("/api/pricing", {
           method: "POST",
@@ -305,7 +305,7 @@ export default function BenchmarkPage() {
             {scenarios.pricing && (
               <>
                 <span>&middot;</span>
-                <span>{PRICING_TEST_TOKENS.length} tokens for pricing</span>
+                <span>{getPricingTokensForChain(chain).length} tokens for pricing</span>
               </>
             )}
           </div>
@@ -356,6 +356,17 @@ export default function BenchmarkPage() {
       <AnimatePresence>
         {(results.length > 0 || pricingRun) && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* Run Context */}
+            {results.length > 0 && (
+              <div className="flex items-center gap-3 text-xs text-[#78716C] mb-4 bg-[#F5F3F0] border border-[#E8E5E0] rounded-lg px-3 py-2 w-fit">
+                <span>EOA</span>
+                <span className="font-mono text-[#1a1a1a]">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
+                <span className="text-[#D6D3CE]">|</span>
+                <span>{selectedChain.name}</span>
+                <span className="text-[#D6D3CE]">|</span>
+                <span>{iterations} iter &times; {concurrency} conc</span>
+              </div>
+            )}
             {/* Tab Navigation */}
             <div className="flex gap-1 mb-6 bg-[#F5F3F0] border border-[#E8E5E0] rounded-xl p-1 w-fit flex-wrap">
               {([
@@ -404,7 +415,7 @@ export default function BenchmarkPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-[#1a1a1a]">Pricing Accuracy Summary</h3>
                         <p className="text-sm text-[#78716C]">
-                          Tested {PRICING_TEST_TOKENS.length} tokens across Major Tokens, Stablecoins, DeFi, and Niche Tokens.
+                          Tested {pricingRun?.tokenResults?.length || getPricingTokensForChain(chain).length} tokens across Major Tokens, Stablecoins, DeFi, and Niche Tokens.
                         </p>
                       </div>
                       <button onClick={() => setSelectedTab("pricing")} className="text-xs text-[#FF4C3B] hover:underline font-medium">

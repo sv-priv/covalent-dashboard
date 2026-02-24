@@ -1,6 +1,6 @@
 "use client";
 
-import { TokenPriceResult, PricingBenchmarkResult, ProviderName } from "@/lib/types";
+import { TokenPriceResult, PricingBenchmarkResult, ProviderName, PROVIDER_META } from "@/lib/types";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   "blue-chip": { label: "Major Tokens", color: "text-[#5B8DEF]", bg: "bg-blue-50 border-blue-200" },
@@ -38,12 +38,19 @@ export default function PricingTable({
     <div className="space-y-6">
       {/* Provider summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {providerResults.map((pr) => (
+        {providerResults.map((pr) => {
+          const meta = PROVIDER_META[pr.provider as ProviderName];
+          return (
           <div key={pr.provider} className="bg-white border border-[#E8E5E0] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-1">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: pr.color }} />
               <span className="text-sm font-semibold text-[#1a1a1a]">{pr.displayName}</span>
             </div>
+            {meta?.endpoints?.pricing && (
+              <p className="text-[10px] font-mono text-[#A8A29E] mb-3 pl-5 truncate" title={meta.endpoints.pricing}>
+                {meta.endpoints.pricing}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-[10px] text-[#A8A29E] uppercase tracking-wider">Coverage</p>
@@ -78,7 +85,8 @@ export default function PricingTable({
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Full token-by-token table */}

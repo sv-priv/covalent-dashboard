@@ -122,6 +122,9 @@ export default function HistoryPage() {
                     <div>
                       <p className="text-sm font-medium text-[#1a1a1a]">{formatDate(run.timestamp)}</p>
                       <p className="text-xs text-[#A8A29E]">
+                        {run.walletAddress && (
+                          <><span className="font-mono">{run.walletAddress.slice(0, 6)}...{run.walletAddress.slice(-4)}</span> &middot; </>
+                        )}
                         {run.chain} &middot; {run.results.length} providers &middot; {run.triggerType}
                       </p>
                     </div>

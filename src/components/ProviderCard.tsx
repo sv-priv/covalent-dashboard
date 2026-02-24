@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ProviderBenchmarkResult } from "@/lib/types";
+import { ProviderBenchmarkResult, PROVIDER_META, ProviderName } from "@/lib/types";
 
 export default function ProviderCard({ result }: { result: ProviderBenchmarkResult }) {
+  const meta = PROVIDER_META[result.provider as ProviderName];
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -11,13 +12,18 @@ export default function ProviderCard({ result }: { result: ProviderBenchmarkResu
       transition={{ duration: 0.4 }}
       className="bg-white border border-[#E8E5E0] rounded-2xl p-5 hover:border-[#D6D3CE] transition-all"
     >
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-1">
         <div
           className="w-4 h-4 rounded-full shrink-0"
           style={{ backgroundColor: result.color }}
         />
         <h3 className="text-[#1a1a1a] font-semibold">{result.displayName}</h3>
       </div>
+      {meta?.endpoints?.balances && (
+        <p className="text-[10px] font-mono text-[#A8A29E] mb-4 pl-7 truncate" title={meta.endpoints.balances}>
+          {meta.endpoints.balances}
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div title="How fast the API responds on average. Lower is better.">

@@ -1,0 +1,20 @@
+name: Scheduled Benchmark
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger benchmark
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DEPLOY_URL }}/api/cron?secret=${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $response"
+          if [ "$response" != "200" ]; then
+            echo "Benchmark trigger failed with status $response"
+            exit 1
+          fi
+          echo "Benchmark triggered successfully"

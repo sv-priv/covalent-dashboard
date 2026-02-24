@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ProviderName, PRICING_TEST_TOKENS } from "@/lib/types";
+import { ProviderName, getPricingTokensForChain } from "@/lib/types";
 import { runPricingBenchmark } from "@/lib/pricing-benchmark";
 import { resolveApiKey } from "@/lib/env-keys";
 import { savePricingRun } from "@/lib/db";
@@ -35,9 +35,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const selectedChain = chain || "eth-mainnet";
+    const tokens = getPricingTokensForChain(selectedChain);
+
     const { tokenResults, providerResults } = await runPricingBenchmark(
-      PRICING_TEST_TOKENS,
-      chain || "eth-mainnet",
+      tokens,
+      selectedChain,
       resolvedProviders
     );
 

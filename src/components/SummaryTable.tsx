@@ -1,6 +1,6 @@
 "use client";
 
-import { ProviderBenchmarkResult } from "@/lib/types";
+import { ProviderBenchmarkResult, PROVIDER_META, ProviderName } from "@/lib/types";
 
 function getRankBadge(rank: number) {
   if (rank === 0) return { label: "1st", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
@@ -95,7 +95,12 @@ export default function SummaryTable({ results }: { results: ProviderBenchmarkRe
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: r.color }}
                     />
-                    <span className="text-[#1a1a1a] font-medium">{r.displayName}</span>
+                    <div>
+                      <span className="text-[#1a1a1a] font-medium">{r.displayName}</span>
+                      <p className="text-[9px] font-mono text-[#A8A29E] truncate max-w-[200px]" title={PROVIDER_META[r.provider as ProviderName]?.endpoints?.balances}>
+                        {PROVIDER_META[r.provider as ProviderName]?.endpoints?.balances}
+                      </p>
+                    </div>
                   </div>
                 </td>
                 <td className={`py-4 px-4 text-right font-mono ${isBestIn(r, "latency") ? "text-emerald-600 font-semibold" : "text-[#1a1a1a]"}`}>

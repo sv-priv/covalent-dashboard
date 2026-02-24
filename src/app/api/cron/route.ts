@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ProviderName, PROVIDER_META, PRICING_TEST_TOKENS } from "@/lib/types";
+import { ProviderName, PROVIDER_META, getPricingTokensForChain } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
 import { runPricingBenchmark } from "@/lib/pricing-benchmark";
 import { getEnvKey } from "@/lib/env-keys";
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { tokenResults, providerResults } = await runPricingBenchmark(
-      PRICING_TEST_TOKENS,
+      getPricingTokensForChain(DEFAULT_CHAIN),
       DEFAULT_CHAIN,
       providers
     );
