@@ -23,6 +23,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -30,17 +34,47 @@ body {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% { background-position: -200% 0; opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { background-position: 200% 0; opacity: 0.6; }
 }
 
 .shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.02) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.03) 50%, transparent 100%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.4s ease-out forwards;
+}
+
+*:focus-visible {
+  outline: 2px solid rgba(255, 76, 59, 0.4);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 select option {
   background: #fff;
+  color: #1a1a1a;
+}
+
+::selection {
+  background: rgba(255, 76, 59, 0.12);
   color: #1a1a1a;
 }

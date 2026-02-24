@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "API Benchmark Dashboard | Covalent vs Competitors",
-  description: "Benchmark and compare blockchain API providers across latency, completeness, reliability, and throughput.",
+  description: "Benchmark and compare blockchain API providers across latency, completeness, reliability, throughput, pricing accuracy, and NFT coverage.",
+  icons: {
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FF4C3B'/><path d='M50 20L20 35l30 15 30-15-30-15zM20 65l30 15 30-15M20 50l30 15 30-15' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>",
+  },
 };
 
 export default function RootLayout({

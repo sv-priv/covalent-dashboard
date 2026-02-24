@@ -37,20 +37,20 @@ export default function CompletenessChart({ results }: { results: ProviderBenchm
   const richest = [...results].sort((a, b) => b.completeness.score - a.completeness.score)[0];
 
   return (
-    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6">
+    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6 hover:shadow-sm transition-shadow duration-200">
       <div className="flex items-start justify-between mb-1">
         <h3 className="text-lg font-semibold text-[#1a1a1a]">Data Completeness</h3>
         {richest && (
-          <span className="text-xs bg-[#FFF5F4] text-[#FF4C3B] px-2.5 py-1 rounded-full border border-[#FF4C3B]/15">
+          <span className="text-xs bg-[#FFF5F4] text-[#FF4C3B] px-2.5 py-1 rounded-full border border-[#FF4C3B]/15 font-medium">
             Most complete: {richest.displayName}
           </span>
         )}
       </div>
       <p className="text-sm text-[#78716C] mb-2">
-        How much useful information each API includes per token. We check for 12 data fields like name, price, logo, spam flag, etc.
+        How much useful information each API includes per token. We check for 12 data fields.
       </p>
       <p className="text-xs text-[#A8A29E] mb-6">
-        Bigger shape = more data fields returned. An API that fills in everything scores 100%.
+        Bigger shape = more data fields returned. 100% means all fields present.
       </p>
       <ResponsiveContainer width="100%" height={350}>
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
@@ -65,7 +65,8 @@ export default function CompletenessChart({ results }: { results: ProviderBenchm
               border: "1px solid #E8E5E0",
               borderRadius: "12px",
               color: "#1a1a1a",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+              padding: "10px 14px",
             }}
           />
           {results.map((r) => (
@@ -81,10 +82,10 @@ export default function CompletenessChart({ results }: { results: ProviderBenchm
           ))}
         </RadarChart>
       </ResponsiveContainer>
-      <div className="flex flex-wrap gap-4 mt-4 justify-center">
+      <div className="flex flex-wrap gap-5 mt-4 justify-center">
         {results.map((r) => (
           <div key={r.provider} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: r.color }} />
+            <div className="w-3 h-3 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: r.color }} />
             <span className="text-sm text-[#78716C]">{r.displayName}</span>
             <span className="text-sm font-mono font-bold" style={{ color: r.color }}>
               {r.completeness.score}%

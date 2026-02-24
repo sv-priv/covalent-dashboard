@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ProviderName, PROVIDER_META, getPricingTokensForChain } from "@/lib/types";
+import { ProviderName, PROVIDER_META, NftBenchmarkResult, getPricingTokensForChain } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
 import { runPricingBenchmark } from "@/lib/pricing-benchmark";
+import { nftProviderFunctions } from "@/lib/providers/nfts";
 import { getEnvKey } from "@/lib/env-keys";
 import { saveBenchmarkRun, savePricingRun } from "@/lib/db";
 
@@ -77,6 +78,22 @@ export async function GET(req: NextRequest) {
     };
     await savePricingRun(pricingRun, "scheduled");
     summary.pricing = { providers: providerResults.length, status: "completed" };
+
+    // NFT benchmark
+    const nftResults: NftBenchmarkResult[] = await Promise.all(
+      providers.map(async ({ name, apiKey }) => {
+        const meta = PROVIDER_META[name];
+        const fetchFn = nftProviderFunctions[name];
+        const start = performance.now();
+        try {
+          const count = await fetchFn(DEFAULT_WALLET, DEFAULT_CHAIN, apiKey);
+          return { provider: name, displayName: meta.displayName, color: meta.color, nftCount: count, latencyMs: Math.round(performance.now() - start), success: true };
+        } catch (err) {
+          return { provider: name, displayName: meta.displayName, color: meta.color, nftCount: 0, latencyMs: Math.round(performance.now() - start), success: false, error: err instanceof Error ? err.message : String(err) };
+        }
+      })
+    );
+    summary.nfts = { providers: nftResults.length, status: "completed", results: nftResults.map((r) => ({ provider: r.provider, count: r.nftCount, success: r.success })) };
   } catch (err) {
     console.error("Cron: error:", err);
     summary.error = err instanceof Error ? err.message : "Unknown error";

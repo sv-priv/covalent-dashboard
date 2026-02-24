@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ProviderName, PROVIDER_META, EnvKeyStatus } from "@/lib/types";
 
 const NAV_ITEMS = [
   {
@@ -44,28 +46,86 @@ const NAV_ITEMS = [
   },
 ];
 
+const STORAGE_KEY = "covalent-benchmark-api-keys";
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const [configuredCount, setConfiguredCount] = useState(0);
+
+  useEffect(() => {
+    let count = 0;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const localKeys: Record<string, string> = stored ? JSON.parse(stored) : {};
+      (Object.keys(PROVIDER_META) as ProviderName[]).forEach((p) => {
+        if (localKeys[p]?.trim()) count++;
+      });
+    } catch {}
+
+    fetch("/api/keys")
+      .then((r) => r.json())
+      .then((envKeys: Record<ProviderName, EnvKeyStatus>) => {
+        (Object.keys(PROVIDER_META) as ProviderName[]).forEach((p) => {
+          if (envKeys[p]?.hasEnvKey && !count) count++;
+          else if (envKeys[p]?.hasEnvKey) {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            const localKeys: Record<string, string> = stored ? JSON.parse(stored) : {};
+            if (!localKeys[p]?.trim()) count++;
+          }
+        });
+        setConfiguredCount(count);
+      })
+      .catch(() => setConfiguredCount(count));
+
+    setConfiguredCount(count);
+  }, []);
+
+  useEffect(() => {
+    const total = Object.keys(PROVIDER_META).length;
+    let localCount = 0;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const localKeys: Record<string, string> = stored ? JSON.parse(stored) : {};
+      (Object.keys(PROVIDER_META) as ProviderName[]).forEach((p) => {
+        if (localKeys[p]?.trim()) localCount++;
+      });
+    } catch {}
+    fetch("/api/keys")
+      .then((r) => r.json())
+      .then((envKeys: Record<ProviderName, EnvKeyStatus>) => {
+        let c = 0;
+        (Object.keys(PROVIDER_META) as ProviderName[]).forEach((p) => {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const localKeys: Record<string, string> = stored ? JSON.parse(stored) : {};
+          if (envKeys[p]?.hasEnvKey || localKeys[p]?.trim()) c++;
+        });
+        setConfiguredCount(Math.min(c, total));
+      })
+      .catch(() => setConfiguredCount(Math.min(localCount, total)));
+  }, [pathname]);
+
+  const total = Object.keys(PROVIDER_META).length;
+  const allConfigured = configuredCount === total;
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-56 bg-white border-r border-[#E8E5E0] flex flex-col z-30">
+    <aside className="fixed left-0 top-0 h-screen w-56 bg-white border-r border-[#E8E5E0] flex flex-col z-30 shadow-[1px_0_8px_rgba(0,0,0,0.03)]">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-[#E8E5E0]">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#FF4C3B] flex items-center justify-center">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-7 h-7 rounded-lg bg-[#FF4C3B] flex items-center justify-center transition-transform group-hover:scale-105">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-[#1a1a1a] leading-tight">GoldRush</p>
-            <p className="text-[10px] text-[#A8A29E] leading-tight">Benchmark</p>
+            <p className="text-sm font-semibold text-[#1a1a1a] leading-tight">Blockchain Data APIs</p>
+            <p className="text-[10px] text-[#A8A29E] leading-tight tracking-wide">Benchmark</p>
           </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === "/"
@@ -76,9 +136,9 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                 isActive
-                  ? "bg-[#FFF5F4] text-[#FF4C3B] font-medium"
+                  ? "bg-[#FFF5F4] text-[#FF4C3B] font-medium shadow-sm shadow-[#FF4C3B]/5"
                   : "text-[#78716C] hover:text-[#1a1a1a] hover:bg-[#F5F3F0]"
               }`}
             >
@@ -92,8 +152,10 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="px-5 py-4 border-t border-[#E8E5E0]">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span className="text-[11px] text-[#A8A29E]">4 providers configured</span>
+          <div className={`w-2 h-2 rounded-full transition-colors ${allConfigured ? "bg-emerald-400" : configuredCount > 0 ? "bg-amber-400" : "bg-[#D6D3CE]"}`} />
+          <span className="text-[11px] text-[#A8A29E]">
+            {configuredCount}/{total} providers ready
+          </span>
         </div>
       </div>
     </aside>

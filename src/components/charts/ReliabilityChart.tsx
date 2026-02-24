@@ -37,22 +37,25 @@ export default function ReliabilityChart({ results }: { results: ProviderBenchma
   const allPerfect = results.every((r) => r.reliability.successRate === 100);
 
   return (
-    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6">
+    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6 hover:shadow-sm transition-shadow duration-200">
       <div className="flex items-start justify-between mb-1">
         <h3 className="text-lg font-semibold text-[#1a1a1a]">Reliability</h3>
         {allPerfect && (
-          <span className="text-xs bg-[#FFF5F4] text-[#FF4C3B] px-2.5 py-1 rounded-full border border-[#FF4C3B]/15">
-            All providers: 100%
+          <span className="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full border border-emerald-200 font-medium flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            All 100%
           </span>
         )}
       </div>
       <p className="text-sm text-[#78716C] mb-2">
-        Did the API actually work every time we called it? This shows the success rate.
+        Did the API actually work every time we called it?
       </p>
       <p className="text-xs text-[#A8A29E] mb-6">
         100% = every request worked. Lower numbers mean some requests failed or timed out.
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {results.map((r) => (
           <div key={r.provider} className="flex flex-col items-center gap-3">
             <div className="relative">
@@ -63,9 +66,9 @@ export default function ReliabilityChart({ results }: { results: ProviderBenchma
                 </span>
               </div>
             </div>
-            <span className="text-sm text-[#78716C] text-center">{r.displayName}</span>
+            <span className="text-sm font-medium text-[#1a1a1a] text-center">{r.displayName}</span>
             <span className="text-xs text-[#A8A29E]">
-              {r.reliability.successfulRequests}/{r.reliability.totalRequests} requests worked
+              {r.reliability.successfulRequests}/{r.reliability.totalRequests} ok
             </span>
           </div>
         ))}

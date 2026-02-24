@@ -26,21 +26,21 @@ export default function LatencyChart({ results }: { results: ProviderBenchmarkRe
   const fastest = [...results].sort((a, b) => a.latency.avg - b.latency.avg)[0];
 
   return (
-    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6">
+    <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6 hover:shadow-sm transition-shadow duration-200">
       <div className="flex items-start justify-between mb-1">
         <h3 className="text-lg font-semibold text-[#1a1a1a]">Response Time</h3>
         {fastest && (
-          <span className="text-xs bg-[#FFF5F4] text-[#FF4C3B] px-2.5 py-1 rounded-full border border-[#FF4C3B]/15">
+          <span className="text-xs bg-[#FFF5F4] text-[#FF4C3B] px-2.5 py-1 rounded-full border border-[#FF4C3B]/15 font-medium">
             Fastest: {fastest.displayName}
           </span>
         )}
       </div>
       <p className="text-sm text-[#78716C] mb-2">
-        How quickly each API responds to the same request. Shorter bars = faster API.
+        How quickly each API responds to the same request.
       </p>
       <p className="text-xs text-[#A8A29E] mb-6">
         <strong className="text-[#78716C]">Avg</strong> = typical speed &nbsp;&middot;&nbsp;
-        <strong className="text-[#78716C]">P95</strong> = worst-case speed (95th percentile)
+        <strong className="text-[#78716C]">P95</strong> = worst-case (95th percentile)
       </p>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} barCategoryGap="20%">
@@ -63,17 +63,18 @@ export default function LatencyChart({ results }: { results: ProviderBenchmarkRe
               border: "1px solid #E8E5E0",
               borderRadius: "12px",
               color: "#1a1a1a",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+              padding: "10px 14px",
             }}
             formatter={(value) => [`${value}ms`]}
           />
-          <Legend wrapperStyle={{ color: "#78716C" }} />
-          <Bar dataKey="avg" name="Avg (typical)" radius={[6, 6, 0, 0]}>
+          <Legend wrapperStyle={{ color: "#78716C", fontSize: 12 }} />
+          <Bar dataKey="avg" name="Avg (typical)" radius={[6, 6, 0, 0]} animationDuration={800}>
             {data.map((entry, index) => (
               <Cell key={index} fill={entry.color} fillOpacity={0.85} />
             ))}
           </Bar>
-          <Bar dataKey="p95" name="P95 (worst case)" radius={[6, 6, 0, 0]}>
+          <Bar dataKey="p95" name="P95 (worst case)" radius={[6, 6, 0, 0]} animationDuration={1000}>
             {data.map((entry, index) => (
               <Cell key={index} fill={entry.color} fillOpacity={0.35} />
             ))}

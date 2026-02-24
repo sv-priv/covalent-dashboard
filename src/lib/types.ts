@@ -310,7 +310,28 @@ export interface PricingBenchmarkRun {
   status: "running" | "completed" | "error";
 }
 
-export type BenchmarkScenario = "balances" | "pricing";
+export type BenchmarkScenario = "balances" | "pricing" | "nfts";
+
+// --- NFT Benchmark Types ---
+
+export interface NftBenchmarkResult {
+  provider: ProviderName;
+  displayName: string;
+  color: string;
+  nftCount: number;
+  latencyMs: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface NftBenchmarkRun {
+  id: string;
+  timestamp: number;
+  walletAddress: string;
+  chain: string;
+  results: NftBenchmarkResult[];
+  status: "running" | "completed" | "error";
+}
 
 export interface ProviderMeta {
   displayName: string;
@@ -318,6 +339,7 @@ export interface ProviderMeta {
   endpoints: {
     balances: string;
     pricing: string;
+    nfts: string;
   };
 }
 
@@ -328,6 +350,7 @@ export const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
     endpoints: {
       balances: "GET /v1/{chainId}/address/{wallet}/balances_v2/",
       pricing: "GET /v1/pricing/historical_by_addresses_v2/{chainId}/USD/{address}/",
+      nfts: "api.covalenthq.com/v1/{chainName}/address/{wallet}/balances_nft/",
     },
   },
   alchemy: {
@@ -336,14 +359,16 @@ export const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
     endpoints: {
       balances: "POST alchemy_getTokenBalances + alchemy_getTokenMetadata",
       pricing: "POST /prices/v1/tokens/by-address",
+      nfts: "eth-mainnet.g.alchemy.com/nft/v3/{apiKey}/getNFTsForOwner",
     },
   },
   moralis: {
     displayName: "Moralis",
     color: "#57C5B6",
     endpoints: {
-      balances: "GET /api/v2.2/{wallet}/erc20",
+      balances: "deep-index.moralis.io/api/v2.2/{wallet}/erc20",
       pricing: "POST /api/v2.2/erc20/prices",
+      nfts: "deep-index.moralis.io/api/v2.2/{address}/nft",
     },
   },
   mobula: {
@@ -352,6 +377,7 @@ export const PROVIDER_META: Record<ProviderName, ProviderMeta> = {
     endpoints: {
       balances: "GET /api/1/wallet/portfolio",
       pricing: "GET /api/1/market/multi-data",
+      nfts: "demo-api.mobula.io/api/1/wallet/nfts",
     },
   },
 };

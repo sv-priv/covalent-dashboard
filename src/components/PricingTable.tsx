@@ -41,9 +41,9 @@ export default function PricingTable({
         {providerResults.map((pr) => {
           const meta = PROVIDER_META[pr.provider as ProviderName];
           return (
-          <div key={pr.provider} className="bg-white border border-[#E8E5E0] rounded-xl p-4">
+          <div key={pr.provider} className="bg-white border border-[#E8E5E0] rounded-xl p-4 hover:shadow-sm transition-shadow duration-200">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: pr.color }} />
+              <div className="w-3 h-3 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: pr.color }} />
               <span className="text-sm font-semibold text-[#1a1a1a]">{pr.displayName}</span>
             </div>
             {meta?.endpoints?.pricing && (
@@ -53,18 +53,18 @@ export default function PricingTable({
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[10px] text-[#A8A29E] uppercase tracking-wider">Coverage</p>
-                <p className="text-xl font-bold font-mono" style={{ color: pr.color }}>
+                <p className="text-[10px] text-[#A8A29E] uppercase tracking-wider font-medium">Coverage</p>
+                <p className="text-xl font-bold font-mono leading-tight" style={{ color: pr.color }}>
                   {pr.coveragePercent}%
                 </p>
-                <p className="text-[10px] text-[#D6D3CE]">{pr.tokensCovered}/{pr.totalTokens} tokens</p>
+                <p className="text-[10px] text-[#A8A29E]">{pr.tokensCovered}/{pr.totalTokens} tokens</p>
               </div>
               <div>
-                <p className="text-[10px] text-[#A8A29E] uppercase tracking-wider">Avg Deviation</p>
-                <p className={`text-xl font-bold font-mono ${pr.avgDeviation !== null && pr.avgDeviation < 1 ? "text-emerald-600" : pr.avgDeviation !== null && pr.avgDeviation < 5 ? "text-amber-600" : "text-red-500"}`}>
+                <p className="text-[10px] text-[#A8A29E] uppercase tracking-wider font-medium">Avg Deviation</p>
+                <p className={`text-xl font-bold font-mono leading-tight ${pr.avgDeviation !== null && pr.avgDeviation < 1 ? "text-emerald-600" : pr.avgDeviation !== null && pr.avgDeviation < 5 ? "text-amber-600" : "text-red-500"}`}>
                   {pr.avgDeviation !== null ? `${pr.avgDeviation}%` : "N/A"}
                 </p>
-                <p className="text-[10px] text-[#D6D3CE]">from consensus</p>
+                <p className="text-[10px] text-[#A8A29E]">from consensus</p>
               </div>
             </div>
             {/* Category breakdown */}
@@ -72,12 +72,12 @@ export default function PricingTable({
               {Object.entries(pr.categoryBreakdown).map(([cat, data]) => {
                 const catMeta = CATEGORY_LABELS[cat];
                 return (
-                  <div key={cat} className="flex items-center justify-between text-[11px]">
+                  <div key={cat} className="flex items-center justify-between text-xs">
                     <span className={catMeta?.color || "text-[#78716C]"}>{catMeta?.label || cat}</span>
                     <span className="text-[#78716C] font-mono">
                       {data.covered}/{data.total}
                       {data.avgDev !== null && (
-                        <span className="ml-1.5 text-[#A8A29E]">({data.avgDev}% dev)</span>
+                        <span className="ml-1.5 text-[#A8A29E]">({data.avgDev}%)</span>
                       )}
                     </span>
                   </div>
@@ -90,11 +90,10 @@ export default function PricingTable({
       </div>
 
       {/* Full token-by-token table */}
-      <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6 overflow-x-auto">
+      <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6 overflow-x-auto shadow-sm">
         <h3 className="text-lg font-semibold text-[#1a1a1a] mb-1">Token-by-Token Comparison</h3>
-        <p className="text-sm text-[#78716C] mb-4">
-          Each cell shows the price returned. Deviation from the median consensus price is shown in color.
-          Red = far from consensus, green = close.
+        <p className="text-sm text-[#78716C] mb-4 leading-relaxed">
+          Each cell shows the price returned and its deviation from the median consensus price.
         </p>
         <table className="w-full text-sm">
           <thead>
@@ -113,7 +112,7 @@ export default function PricingTable({
             {tokenResults.map((tr) => {
               const catMeta = CATEGORY_LABELS[tr.token.category];
               return (
-                <tr key={tr.token.address} className="border-b border-[#F0EDE8] hover:bg-[#FAFAF8]">
+                <tr key={tr.token.address} className="border-b border-[#F0EDE8] hover:bg-[#FAFAF8] transition-colors duration-100">
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-semibold text-[#1a1a1a]">{tr.token.symbol}</span>
@@ -121,7 +120,7 @@ export default function PricingTable({
                     </div>
                   </td>
                   <td className="py-2.5 px-3">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${catMeta?.bg || ""} ${catMeta?.color || ""}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${catMeta?.bg || ""} ${catMeta?.color || ""}`}>
                       {catMeta?.label || tr.token.category}
                     </span>
                   </td>
@@ -142,7 +141,7 @@ export default function PricingTable({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-[#D6D3CE]">No price</span>
+                          <span className="text-xs text-[#D6D3CE] italic">No price</span>
                         )}
                       </td>
                     );

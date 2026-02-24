@@ -59,7 +59,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40"
             onClick={onClose}
           />
           <motion.div
@@ -70,14 +70,14 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="bg-white border border-[#E8E5E0] rounded-2xl shadow-xl shadow-black/10 w-full max-w-md"
+              className="bg-white border border-[#E8E5E0] rounded-2xl shadow-2xl shadow-black/15 w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="px-5 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-lg font-semibold text-[#1a1a1a]">API Keys</h2>
-                  <span className="text-xs text-[#A8A29E] bg-[#F5F3F0] px-2 py-1 rounded-md">
+                  <span className="text-xs text-[#A8A29E] bg-[#F5F3F0] px-2 py-1 rounded-md font-medium">
                     {configuredCount}/{providers.length} configured
                   </span>
                 </div>
@@ -97,13 +97,13 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                     return (
                       <div
                         key={provider}
-                        className="bg-[#FAFAF8] border border-[#E8E5E0] rounded-xl p-3"
+                        className="bg-[#FAFAF8] border border-[#E8E5E0] rounded-xl p-3 transition-all duration-150"
                       >
                         {/* Provider Header Row */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2.5">
                             <div
-                              className="w-2.5 h-2.5 rounded-full"
+                              className="w-2.5 h-2.5 rounded-full ring-1 ring-white shadow-sm"
                               style={{ backgroundColor: meta.color }}
                             />
                             <span className="text-sm font-medium text-[#1a1a1a]">{meta.displayName}</span>
@@ -148,9 +148,12 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                             </div>
                             <button
                               onClick={() => setEditing({ ...editing, [provider]: true })}
-                              className="text-[11px] text-[#A8A29E] hover:text-[#78716C] transition-colors"
+                              className="text-[11px] text-[#A8A29E] hover:text-[#78716C] transition-colors flex items-center gap-1"
                             >
-                              Use your own key instead &rarr;
+                              Use your own key instead
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
                             </button>
                           </div>
                         ) : isEditing || !hasLocalKey ? (
@@ -172,7 +175,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                                       setKeys({ ...keys, [provider]: "" });
                                     }
                                   }}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#A8A29E] hover:text-[#1a1a1a] transition-colors bg-[#F5F3F0] px-2 py-0.5 rounded"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#A8A29E] hover:text-[#1a1a1a] transition-colors bg-[#F5F3F0] px-2 py-0.5 rounded font-medium"
                                 >
                                   {hasEnvKey ? "Use default" : "Cancel"}
                                 </button>
@@ -184,10 +187,10 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                             <span className="text-xs font-mono text-[#78716C] truncate">
                               {isRevealed ? keys[provider] : maskLocalKey(keys[provider])}
                             </span>
-                            <div className="flex items-center gap-1 shrink-0 ml-auto">
+                            <div className="flex items-center gap-0.5 shrink-0 ml-auto">
                               <button
                                 onClick={() => setRevealed({ ...revealed, [provider]: !isRevealed })}
-                                className="p-1 text-[#D6D3CE] hover:text-[#78716C] transition-colors rounded hover:bg-[#F5F3F0]"
+                                className="p-1.5 text-[#D6D3CE] hover:text-[#78716C] transition-colors rounded-md hover:bg-[#F5F3F0]"
                                 title={isRevealed ? "Hide" : "Show"}
                               >
                                 {isRevealed ? (
@@ -206,7 +209,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                                   setEditing({ ...editing, [provider]: true });
                                   setRevealed({ ...revealed, [provider]: false });
                                 }}
-                                className="p-1 text-[#D6D3CE] hover:text-[#78716C] transition-colors rounded hover:bg-[#F5F3F0]"
+                                className="p-1.5 text-[#D6D3CE] hover:text-[#78716C] transition-colors rounded-md hover:bg-[#F5F3F0]"
                                 title="Edit"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,7 +218,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                               </button>
                               <button
                                 onClick={() => setKeys({ ...keys, [provider]: "" })}
-                                className="p-1 text-[#D6D3CE] hover:text-red-400 transition-colors rounded hover:bg-red-50"
+                                className="p-1.5 text-[#D6D3CE] hover:text-red-400 transition-colors rounded-md hover:bg-red-50"
                                 title="Remove"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,10 +235,15 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-[#E8E5E0] flex items-center justify-between">
-                <p className="text-[11px] text-[#D6D3CE]">
-                  Keys are never sent to third parties.
-                </p>
+              <div className="px-5 py-3 border-t border-[#E8E5E0] flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3 h-3 text-[#D6D3CE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <p className="text-[11px] text-[#A8A29E]">
+                    Keys are never sent to third parties.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={onClose}
@@ -245,7 +253,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSave, currentKeys, envK
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 rounded-lg text-xs font-medium bg-[#1a1a1a] text-white hover:bg-[#333] transition-all"
+                    className="px-4 py-2 rounded-lg text-xs font-medium bg-[#1a1a1a] text-white hover:bg-[#333] active:scale-[0.97] transition-all shadow-sm"
                   >
                     Save Changes
                   </button>
