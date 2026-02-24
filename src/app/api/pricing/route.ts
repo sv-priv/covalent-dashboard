@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProviderName, PRICING_TEST_TOKENS } from "@/lib/types";
 import { runPricingBenchmark } from "@/lib/pricing-benchmark";
 import { resolveApiKey } from "@/lib/env-keys";
+import { savePricingRun } from "@/lib/db";
 
 export const maxDuration = 120;
 
@@ -40,14 +41,22 @@ export async function POST(req: NextRequest) {
       resolvedProviders
     );
 
-    return NextResponse.json({
+    const run = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       chain: chain || "eth-mainnet",
       tokenResults,
       providerResults,
-      status: "completed",
-    });
+      status: "completed" as const,
+    };
+
+    try {
+      await savePricingRun(run, (body as unknown as Record<string, unknown>).triggerType === "scheduled" ? "scheduled" : "manual");
+    } catch (dbErr) {
+      console.error("Failed to save pricing run to Supabase:", dbErr);
+    }
+
+    return NextResponse.json(run);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal server error" },

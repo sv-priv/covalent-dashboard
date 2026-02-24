@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BenchmarkRequest, ProviderBenchmarkResult, ProviderName, PROVIDER_META } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
 import { resolveApiKey } from "@/lib/env-keys";
+import { saveBenchmarkRun } from "@/lib/db";
 
 export const maxDuration = 120;
 
@@ -69,14 +70,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const run = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       walletAddress: body.walletAddress,
       chain,
       results,
-      status: "completed",
-    });
+      status: "completed" as const,
+    };
+
+    try {
+      await saveBenchmarkRun(run, (body as unknown as Record<string, unknown>).triggerType === "scheduled" ? "scheduled" : "manual");
+    } catch (dbErr) {
+      console.error("Failed to save benchmark run to Supabase:", dbErr);
+    }
+
+    return NextResponse.json(run);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal server error" },
