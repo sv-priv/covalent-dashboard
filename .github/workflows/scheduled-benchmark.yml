@@ -8,6 +8,7 @@ on:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    environment: covalent
     steps:
       - name: Trigger benchmark
         run: |
