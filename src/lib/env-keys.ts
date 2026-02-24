@@ -5,7 +5,6 @@ const ENV_KEY_MAP: Record<ProviderName, string> = {
   alchemy: "ALCHEMY_API_KEY",
   moralis: "MORALIS_API_KEY",
   mobula: "MOBULA_API_KEY",
-  codex: "CODEX_API_KEY",
 };
 
 export function getEnvKey(provider: ProviderName): string | undefined {
@@ -13,13 +12,12 @@ export function getEnvKey(provider: ProviderName): string | undefined {
   return val && val.trim().length > 0 ? val.trim() : undefined;
 }
 
-export function maskKey(key: string): string {
-  if (key.length <= 8) return "*".repeat(key.length);
-  return key.slice(0, 4) + "*".repeat(key.length - 8) + key.slice(-4);
+export function maskKey(_key: string): string {
+  return "••••••••••••";
 }
 
 export function getEnvKeyStatus(): Record<ProviderName, { hasEnvKey: boolean; masked: string }> {
-  const providers: ProviderName[] = ["covalent", "alchemy", "moralis", "mobula", "codex"];
+  const providers: ProviderName[] = ["covalent", "alchemy", "moralis", "mobula"];
   const result = {} as Record<ProviderName, { hasEnvKey: boolean; masked: string }>;
 
   for (const p of providers) {

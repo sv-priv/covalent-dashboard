@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProviderName, PROVIDER_META, BenchmarkRun, ProviderBenchmarkResult, EnvKeyStatus, SUPPORTED_CHAINS } from "@/lib/types";
+import { ProviderName, PROVIDER_META, BenchmarkRun, ProviderBenchmarkResult, EnvKeyStatus, SUPPORTED_CHAINS, BenchmarkScenario, PricingBenchmarkRun, PRICING_TEST_TOKENS } from "@/lib/types";
 import ApiKeyModal from "@/components/ApiKeyModal";
 import ProviderCard from "@/components/ProviderCard";
 import SummaryTable from "@/components/SummaryTable";
@@ -10,6 +10,8 @@ import LatencyChart from "@/components/charts/LatencyChart";
 import CompletenessChart from "@/components/charts/CompletenessChart";
 import ThroughputChart from "@/components/charts/ThroughputChart";
 import ReliabilityChart from "@/components/charts/ReliabilityChart";
+import PricingAccuracyChart from "@/components/charts/PricingAccuracyChart";
+import PricingTable from "@/components/PricingTable";
 
 const DEFAULT_WALLET = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 const STORAGE_KEY = "covalent-benchmark-api-keys";
@@ -17,13 +19,13 @@ const HISTORY_KEY = "covalent-benchmark-history";
 
 function loadKeys(): Record<ProviderName, string> {
   if (typeof window === "undefined") {
-    return { covalent: "", alchemy: "", moralis: "", mobula: "", codex: "" };
+    return { covalent: "", alchemy: "", moralis: "", mobula: "" };
   }
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
   } catch {}
-  return { covalent: "", alchemy: "", moralis: "", mobula: "", codex: "" };
+  return { covalent: "", alchemy: "", moralis: "", mobula: "" };
 }
 
 function saveKeys(keys: Record<ProviderName, string>) {
@@ -45,7 +47,7 @@ function saveHistory(runs: BenchmarkRun[]) {
 
 export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState<Record<ProviderName, string>>({
-    covalent: "", alchemy: "", moralis: "", mobula: "", codex: "",
+    covalent: "", alchemy: "", moralis: "", mobula: "",
   });
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [walletAddress, setWalletAddress] = useState(DEFAULT_WALLET);
@@ -56,14 +58,18 @@ export default function Dashboard() {
   const [progress, setProgress] = useState("");
   const [currentRun, setCurrentRun] = useState<BenchmarkRun | null>(null);
   const [history, setHistory] = useState<BenchmarkRun[]>([]);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "latency" | "completeness" | "reliability" | "throughput">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "latency" | "completeness" | "reliability" | "throughput" | "pricing">("overview");
   const [envKeys, setEnvKeys] = useState<Record<ProviderName, EnvKeyStatus>>({
     covalent: { hasEnvKey: false, masked: "" },
     alchemy: { hasEnvKey: false, masked: "" },
     moralis: { hasEnvKey: false, masked: "" },
     mobula: { hasEnvKey: false, masked: "" },
-    codex: { hasEnvKey: false, masked: "" },
   });
+  const [scenarios, setScenarios] = useState<Record<BenchmarkScenario, boolean>>({
+    balances: true,
+    pricing: true,
+  });
+  const [pricingRun, setPricingRun] = useState<PricingBenchmarkRun | null>(null);
 
   useEffect(() => {
     setApiKeys(loadKeys());
@@ -91,44 +97,78 @@ export default function Dashboard() {
 
     setIsRunning(true);
     setProgress("Initializing benchmark...");
-    setSelectedTab("overview");
+    setSelectedTab(scenarios.balances ? "overview" : "pricing");
 
     try {
-      setProgress(`Testing ${configuredProviders.length} providers with ${iterations} iterations each...`);
+      const providerPayload = configuredProviders.map((name) => ({
+        name,
+        apiKey: envKeys[name]?.hasEnvKey ? "" : apiKeys[name],
+      }));
 
-      const response = await fetch("/api/benchmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress,
-          chain,
-          providers: configuredProviders.map((name) => ({
-            name,
-            apiKey: envKeys[name]?.hasEnvKey ? "" : apiKeys[name],
-          })),
-          iterations,
-          concurrency,
-        }),
-      });
+      const activeScenarios = Object.entries(scenarios).filter(([, v]) => v).map(([k]) => k);
+      const totalSteps = activeScenarios.length;
+      let step = 0;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Benchmark failed");
+      // Scenario 1: Token Balances
+      if (scenarios.balances) {
+        step++;
+        setProgress(`[${step}/${totalSteps}] Testing token balances across ${configuredProviders.length} providers...`);
+
+        const response = await fetch("/api/benchmark", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress,
+            chain,
+            providers: providerPayload,
+            iterations,
+            concurrency,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Balance benchmark failed");
+        }
+
+        const run: BenchmarkRun = await response.json();
+        setCurrentRun(run);
+
+        const updatedHistory = [run, ...history].slice(0, 20);
+        setHistory(updatedHistory);
+        saveHistory(updatedHistory);
       }
 
-      const run: BenchmarkRun = await response.json();
-      setCurrentRun(run);
-      setProgress("Benchmark complete!");
+      // Scenario 2: Token Pricing Accuracy
+      if (scenarios.pricing) {
+        step++;
+        setProgress(`[${step}/${totalSteps}] Testing pricing accuracy for ${PRICING_TEST_TOKENS.length} tokens...`);
 
-      const updatedHistory = [run, ...history].slice(0, 20);
-      setHistory(updatedHistory);
-      saveHistory(updatedHistory);
+        const pricingResponse = await fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chain,
+            providers: providerPayload,
+          }),
+        });
+
+        if (!pricingResponse.ok) {
+          const errorData = await pricingResponse.json();
+          throw new Error(errorData.error || "Pricing benchmark failed");
+        }
+
+        const pricingData: PricingBenchmarkRun = await pricingResponse.json();
+        setPricingRun(pricingData);
+      }
+
+      setProgress("All benchmarks complete!");
     } catch (err) {
       setProgress(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsRunning(false);
     }
-  }, [configuredProviders, apiKeys, walletAddress, chain, iterations, concurrency, history]);
+  }, [configuredProviders, apiKeys, walletAddress, chain, iterations, concurrency, history, scenarios, envKeys]);
 
   const results: ProviderBenchmarkResult[] = currentRun?.results || [];
 
@@ -174,7 +214,7 @@ export default function Dashboard() {
             >
               API Keys
               <span className="ml-1.5 text-[10px] bg-[#F5F3F0] text-[#78716C] px-1.5 py-0.5 rounded-md">
-                {configuredProviders.length}/5
+                {configuredProviders.length}/{Object.keys(PROVIDER_META).length}
               </span>
             </button>
           </div>
@@ -195,12 +235,13 @@ export default function Dashboard() {
                 We send the <strong className="text-[#1a1a1a]">exact same request</strong> to every provider and measure four things:
               </p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {[
                 { icon: "M13 10V3L4 14h7v7l9-11h-7z", label: "Speed", desc: "Response time per request" },
                 { icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", label: "Data Quality", desc: "Richness of returned fields" },
                 { icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", label: "Uptime", desc: "Request success rate" },
                 { icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10", label: "Capacity", desc: "Throughput under load" },
+                { icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z", label: "Pricing", desc: "Token price accuracy" },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -224,6 +265,43 @@ export default function Dashboard() {
           className="bg-white border border-[#E8E5E0] rounded-2xl p-5 mb-8"
         >
           <div className="flex flex-col gap-4">
+            {/* Scenario Selection */}
+            <div>
+              <label className="text-[11px] text-[#78716C] font-medium mb-2 block uppercase tracking-wider">
+                Scenarios to run
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {([
+                  { key: "balances" as BenchmarkScenario, label: "Token Balances", desc: "Speed, data quality, uptime, capacity" },
+                  { key: "pricing" as BenchmarkScenario, label: "Pricing Accuracy", desc: "20 tokens across 4 categories" },
+                ]).map(({ key, label, desc }) => (
+                  <button
+                    key={key}
+                    onClick={() => setScenarios((s) => ({ ...s, [key]: !s[key] }))}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                      scenarios[key]
+                        ? "bg-[#FFF5F4] border-[#FF4C3B]/20 text-[#1a1a1a]"
+                        : "bg-[#FAFAF8] border-[#E8E5E0] text-[#A8A29E]"
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                      scenarios[key] ? "bg-[#FF4C3B] border-[#FF4C3B]" : "border-[#D6D3CE]"
+                    }`}>
+                      {scenarios[key] && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{label}</div>
+                      <div className="text-[11px] text-[#A8A29E]">{desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Row 1: Wallet + Chain */}
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1">
@@ -291,9 +369,9 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={runBenchmark}
-                disabled={isRunning}
+                disabled={isRunning || !Object.values(scenarios).some(Boolean)}
                 className={`w-full sm:w-auto px-8 py-2.5 rounded-lg text-sm font-semibold transition-all shrink-0 ${
-                  isRunning
+                  isRunning || !Object.values(scenarios).some(Boolean)
                     ? "bg-[#E8E5E0] text-[#A8A29E] cursor-not-allowed"
                     : "bg-[#1a1a1a] text-white hover:bg-[#333] active:scale-[0.98]"
                 }`}
@@ -319,13 +397,26 @@ export default function Dashboard() {
             </div>
 
             {/* Context line */}
-            <div className="flex items-center gap-4 text-[11px] text-[#A8A29E]">
+            <div className="flex items-center gap-4 text-[11px] text-[#A8A29E] flex-wrap">
               <span>Testing on <strong className="text-[#78716C]">{selectedChain.name}</strong></span>
               <span>&middot;</span>
-              <span>{iterations} iterations per provider</span>
-              <span>&middot;</span>
-              <span>{concurrency} parallel requests for capacity test</span>
+              <span>{Object.values(scenarios).filter(Boolean).length} scenario{Object.values(scenarios).filter(Boolean).length !== 1 ? "s" : ""} selected</span>
+              {scenarios.balances && (
+                <>
+                  <span>&middot;</span>
+                  <span>{iterations} iterations &times; {concurrency} parallel</span>
+                </>
+              )}
+              {scenarios.pricing && (
+                <>
+                  <span>&middot;</span>
+                  <span>{PRICING_TEST_TOKENS.length} tokens for pricing</span>
+                </>
+              )}
             </div>
+            <p className="text-[10px] text-[#D6D3CE] mt-1">
+              Speed &amp; throughput are measured from your browser&apos;s location and may vary. Increase iterations for more statistical confidence.
+            </p>
           </div>
 
           {progress && (
@@ -342,7 +433,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Empty State */}
-        {results.length === 0 && !isRunning && (
+        {results.length === 0 && !pricingRun && !isRunning && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -368,7 +459,7 @@ export default function Dashboard() {
 
         {/* Results */}
         <AnimatePresence>
-          {results.length > 0 && (
+          {(results.length > 0 || pricingRun) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -382,6 +473,7 @@ export default function Dashboard() {
                   { key: "completeness" as const, label: "Data Quality" },
                   { key: "reliability" as const, label: "Uptime" },
                   { key: "throughput" as const, label: "Capacity" },
+                  ...(pricingRun ? [{ key: "pricing" as const, label: "Pricing" }] : []),
                 ]).map(({ key, label }) => (
                   <button
                     key={key}
@@ -404,20 +496,24 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-6"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                    {results.map((r) => (
-                      <ProviderCard key={r.provider} result={r} />
-                    ))}
-                  </div>
-                  <SummaryTable results={results} />
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <LatencyChart results={results} />
-                    <CompletenessChart results={results} />
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <ThroughputChart results={results} />
-                    <ReliabilityChart results={results} />
-                  </div>
+                  {results.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                        {results.map((r) => (
+                          <ProviderCard key={r.provider} result={r} />
+                        ))}
+                      </div>
+                      <SummaryTable results={results} />
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <LatencyChart results={results} />
+                        <CompletenessChart results={results} />
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <ThroughputChart results={results} />
+                        <ReliabilityChart results={results} />
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -563,6 +659,64 @@ export default function Dashboard() {
                           <span className="text-xs text-[#A8A29E] w-32 text-right">
                             {r.throughput.completedInWindow}/{r.throughput.concurrentRequests} in {r.throughput.windowMs}ms
                           </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Pricing Tab */}
+              {selectedTab === "pricing" && pricingRun && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <PricingAccuracyChart results={pricingRun.providerResults} />
+                  <PricingTable
+                    tokenResults={pricingRun.tokenResults}
+                    providerResults={pricingRun.providerResults}
+                  />
+                </motion.div>
+              )}
+
+              {/* Pricing in Overview */}
+              {selectedTab === "overview" && pricingRun && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6 mt-6"
+                >
+                  <div className="bg-white border border-[#E8E5E0] rounded-2xl p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#1a1a1a]">Pricing Accuracy Summary</h3>
+                        <p className="text-sm text-[#78716C]">
+                          Tested {PRICING_TEST_TOKENS.length} tokens across Major Tokens, Stablecoins, DeFi, and Niche Tokens.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedTab("pricing")}
+                        className="text-xs text-[#FF4C3B] hover:underline font-medium"
+                      >
+                        View details &rarr;
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {pricingRun.providerResults.map((pr) => (
+                        <div key={pr.provider} className="bg-[#FAFAF8] border border-[#F0EDE8] rounded-xl p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pr.color }} />
+                            <span className="text-xs font-medium text-[#1a1a1a]">{pr.displayName}</span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-bold font-mono" style={{ color: pr.color }}>
+                              {pr.coveragePercent}%
+                            </span>
+                            <span className="text-[10px] text-[#A8A29E]">coverage</span>
+                          </div>
+                          {pr.avgDeviation !== null && (
+                            <p className={`text-[11px] font-mono mt-0.5 ${pr.avgDeviation < 1 ? "text-emerald-600" : pr.avgDeviation < 5 ? "text-amber-600" : "text-red-500"}`}>
+                              {pr.avgDeviation}% avg deviation
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
