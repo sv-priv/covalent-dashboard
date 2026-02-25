@@ -21,54 +21,54 @@ export async function POST(req: NextRequest) {
     const concurrency = body.concurrency || 3;
     const chain = body.chain || "eth-mainnet";
 
-    const results: ProviderBenchmarkResult[] = [];
+    const validProviders = body.providers.filter(
+      (p) => resolveApiKey(p.name, p.apiKey)
+    );
 
-    for (const provider of body.providers) {
-      const apiKey = resolveApiKey(provider.name, provider.apiKey);
-      if (!apiKey) {
-        continue;
-      }
-      try {
-        const result = await benchmarkProvider(
-          provider.name,
-          body.walletAddress,
-          chain,
-          apiKey,
-          iterations,
-          concurrency
-        );
-        results.push(result);
-      } catch (err) {
-        const meta = PROVIDER_META[provider.name as ProviderName] || { displayName: provider.name, color: "#666" };
-        results.push({
-          provider: provider.name,
-          displayName: meta.displayName,
-          color: meta.color,
-          latency: { avg: 0, min: 0, max: 0, p95: 0, samples: [] },
-          completeness: {
-            score: 0,
-            totalFields: 12,
-            presentFields: 0,
-            fieldBreakdown: {},
-            tokensReturned: 0,
-          },
-          reliability: {
-            successRate: 0,
-            totalRequests: iterations,
-            successfulRequests: 0,
-            failedRequests: iterations,
-            errors: [err instanceof Error ? err.message : String(err)],
-          },
-          throughput: {
-            requestsPerSecond: 0,
-            concurrentRequests: concurrency,
-            completedInWindow: 0,
-            windowMs: 0,
-          },
-          rawDataSample: [],
-        });
-      }
-    }
+    const results: ProviderBenchmarkResult[] = await Promise.all(
+      validProviders.map(async (provider) => {
+        const apiKey = resolveApiKey(provider.name, provider.apiKey)!;
+        try {
+          return await benchmarkProvider(
+            provider.name,
+            body.walletAddress,
+            chain,
+            apiKey,
+            iterations,
+            concurrency
+          );
+        } catch (err) {
+          const meta = PROVIDER_META[provider.name as ProviderName] || { displayName: provider.name, color: "#666" };
+          return {
+            provider: provider.name,
+            displayName: meta.displayName,
+            color: meta.color,
+            latency: { avg: 0, min: 0, max: 0, p95: 0, samples: [] },
+            completeness: {
+              score: 0,
+              totalFields: 12,
+              presentFields: 0,
+              fieldBreakdown: {},
+              tokensReturned: 0,
+            },
+            reliability: {
+              successRate: 0,
+              totalRequests: iterations,
+              successfulRequests: 0,
+              failedRequests: iterations,
+              errors: [err instanceof Error ? err.message : String(err)],
+            },
+            throughput: {
+              requestsPerSecond: 0,
+              concurrentRequests: concurrency,
+              completedInWindow: 0,
+              windowMs: 0,
+            },
+            rawDataSample: [],
+          };
+        }
+      })
+    );
 
     const run = {
       id: crypto.randomUUID(),

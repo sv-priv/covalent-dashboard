@@ -42,8 +42,8 @@ export default function BenchmarkPage() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [walletAddress, setWalletAddress] = useState(DEFAULT_WALLET);
   const [chain, setChain] = useState(SUPPORTED_CHAINS[0].id);
-  const [iterations, setIterations] = useState(5);
-  const [concurrency, setConcurrency] = useState(3);
+  const [iterations, setIterations] = useState(3);
+  const [concurrency, setConcurrency] = useState(2);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState("");
   const [currentRun, setCurrentRun] = useState<BenchmarkRun | null>(null);
