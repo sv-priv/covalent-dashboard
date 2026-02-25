@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Covalent API Benchmark Dashboard
 
-## Getting Started
+Benchmark and compare blockchain data API providers (Covalent GoldRush, Alchemy, Moralis, Mobula) across speed, uptime, throughput, pricing accuracy, and NFT coverage.
 
-First, run the development server:
+## Run Locally
+
+### 1. Prerequisites
+
+- Node.js 18 or later
+- [npm](https://www.npmjs.com/) (or yarn, pnpm, bun)
+
+### 2. Clone and install
+
+```bash
+git clone <repository-url>
+cd covalent-dashboard
+npm install
+```
+
+### 3. Get API keys
+
+You need at least one provider API key to run benchmarks:
+
+| Provider | URL |
+|----------|-----|
+| Covalent | https://www.covalenthq.com/platform/auth/register/ |
+| Alchemy | https://dashboard.alchemy.com/ |
+| Moralis | https://admin.moralis.io/register |
+| Mobula | https://developer.mobula.fi/ |
+
+### 4. Configure environment
+
+Create a `.env.local` file in the project root:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and add your keys. At minimum, set one provider:
+
+```env
+# At least one required
+COVALENT_API_KEY=your_key_here
+ALCHEMY_API_KEY=
+MORALIS_API_KEY=
+MOBULA_API_KEY=
+
+# Optional: for history and trends
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+
+# Optional: for scheduled runs
+CRON_SECRET=
+```
+
+Keys in `.env.local` are used server-side only and are not exposed to the browser.
+
+### 5. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 6. Run a benchmark
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Go to **Run Benchmark**
+2. Choose scenarios (Token Balances, Pricing Accuracy, NFT Balances)
+3. Optionally change the wallet address and network
+4. Click **Run Benchmark**
+5. View results in the tabs
 
-## Learn More
+## Optional: History and persistence
 
-To learn more about Next.js, take a look at the following resources:
+To persist benchmark runs and view history:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a [Supabase](https://supabase.com) project
+2. Run the SQL in `supabase-schema.sql` in the Supabase SQL Editor
+3. Add to `.env.local`:
+   ```env
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your_anon_key
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Build for production
 
-## Deploy on Vercel
+```bash
+npm run build
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
