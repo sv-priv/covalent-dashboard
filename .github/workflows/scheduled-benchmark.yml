@@ -10,17 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     environment: covalent
     steps:
+      - name: Warm up (reduce cold start 502)
+        run: |
+          curl -s -o /dev/null -m 15 "${{ secrets.DEPLOY_URL }}/" || true
+          sleep 5
       - name: Trigger benchmark
         run: |
           URL="${{ secrets.DEPLOY_URL }}/api/cron"
           echo "Calling: ${URL%%/api/cron*}..."
-          response=$(curl -s -w "\n%{http_code}" -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-          echo "HTTP status: $http_code"
-          if [ "$http_code" != "200" ] && [ "$http_code" != "202" ]; then
-            echo "Response body: $body"
-            echo "Benchmark trigger failed with status $http_code"
-            exit 1
-          fi
-          echo "Benchmark triggered successfully (HTTP $http_code)"
+          for attempt in 1 2 3; do
+            response=$(curl -s -w "\n%{http_code}" -m 70 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | sed '$d')
+            echo "Attempt $attempt: HTTP $http_code"
+            if [ "$http_code" = "200" ] || [ "$http_code" = "202" ]; then
+              echo "Benchmark triggered successfully"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            else
+              echo "Response body: $body"
+              echo "Benchmark trigger failed with status $http_code"
+              exit 1
+            fi
+          done
