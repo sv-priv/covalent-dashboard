@@ -71,6 +71,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 4. Click **Run Benchmark**
 5. View results in the tabs
 
+## Scheduled runs (cron)
+
+For better accuracy, benchmarks can run automatically every 30 minutes via a cron job. This keeps data fresh and surfaces trends over time. Configure `CRON_SECRET` in your environment and trigger the `/api/cron` endpoint (e.g. with GitHub Actions or cron-job.org). See `.github/workflows/scheduled-benchmark.yml` for an example.
+
 ## Optional: History and persistence
 
 To persist benchmark runs and view history:
