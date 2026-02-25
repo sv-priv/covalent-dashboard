@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ProviderName, PROVIDER_META, NftBenchmarkResult, getPricingTokensForChain } from "@/lib/types";
+import { ProviderName, PROVIDER_META, getPricingTokensForChain } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
 import { runPricingBenchmark } from "@/lib/pricing-benchmark";
-import { nftProviderFunctions } from "@/lib/providers/nfts";
 import { getEnvKey } from "@/lib/env-keys";
 import { saveBenchmarkRun, savePricingRun } from "@/lib/db";
 
-export const maxDuration = 120;
+// Netlify sync functions max at 60s - keep workload minimal to avoid 502
+export const maxDuration = 60;
 
 const DEFAULT_WALLET = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 const DEFAULT_CHAIN = "eth-mainnet";
-const DEFAULT_ITERATIONS = 2;
-const DEFAULT_CONCURRENCY = 1;
+const CRON_ITERATIONS = 1;
+const CRON_CONCURRENCY = 1;
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret") ||
@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
           DEFAULT_WALLET,
           DEFAULT_CHAIN,
           provider.apiKey,
-          DEFAULT_ITERATIONS,
-          DEFAULT_CONCURRENCY
+          CRON_ITERATIONS,
+          CRON_CONCURRENCY
         );
         benchmarkResults.push(result);
       } catch (err) {
@@ -62,8 +62,10 @@ export async function GET(req: NextRequest) {
       summary.balances = { providers: benchmarkResults.length, status: "completed" };
     }
 
+    // Use only 3 tokens to stay under 60s
+    const pricingTokens = getPricingTokensForChain(DEFAULT_CHAIN).slice(0, 3);
     const { tokenResults, providerResults } = await runPricingBenchmark(
-      getPricingTokensForChain(DEFAULT_CHAIN),
+      pricingTokens,
       DEFAULT_CHAIN,
       providers
     );
@@ -78,22 +80,6 @@ export async function GET(req: NextRequest) {
     };
     await savePricingRun(pricingRun, "scheduled");
     summary.pricing = { providers: providerResults.length, status: "completed" };
-
-    // NFT benchmark
-    const nftResults: NftBenchmarkResult[] = await Promise.all(
-      providers.map(async ({ name, apiKey }) => {
-        const meta = PROVIDER_META[name];
-        const fetchFn = nftProviderFunctions[name];
-        const start = performance.now();
-        try {
-          const count = await fetchFn(DEFAULT_WALLET, DEFAULT_CHAIN, apiKey);
-          return { provider: name, displayName: meta.displayName, color: meta.color, nftCount: count, latencyMs: Math.round(performance.now() - start), success: true };
-        } catch (err) {
-          return { provider: name, displayName: meta.displayName, color: meta.color, nftCount: 0, latencyMs: Math.round(performance.now() - start), success: false, error: err instanceof Error ? err.message : String(err) };
-        }
-      })
-    );
-    summary.nfts = { providers: nftResults.length, status: "completed", results: nftResults.map((r) => ({ provider: r.provider, count: r.nftCount, success: r.success })) };
   } catch (err) {
     console.error("Cron: error:", err);
     summary.error = err instanceof Error ? err.message : "Unknown error";

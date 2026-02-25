@@ -4,6 +4,7 @@
 
 [functions]
   external_node_modules = ["@supabase/supabase-js"]
+  timeout = 60
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

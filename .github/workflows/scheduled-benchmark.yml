@@ -18,9 +18,9 @@ jobs:
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "HTTP status: $http_code"
-          if [ "$http_code" != "200" ]; then
+          if [ "$http_code" != "200" ] && [ "$http_code" != "202" ]; then
             echo "Response body: $body"
             echo "Benchmark trigger failed with status $http_code"
             exit 1
           fi
-          echo "Benchmark triggered successfully"
+          echo "Benchmark triggered successfully (HTTP $http_code)"
