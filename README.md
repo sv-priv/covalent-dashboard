@@ -21,12 +21,12 @@ npm install
 
 You need at least one provider API key to run benchmarks:
 
-| Provider | URL |
-|----------|-----|
+| Provider | URL                                                |
+| -------- | -------------------------------------------------- |
 | Covalent | https://www.covalenthq.com/platform/auth/register/ |
-| Alchemy | https://dashboard.alchemy.com/ |
-| Moralis | https://admin.moralis.io/register |
-| Mobula | https://developer.mobula.fi/ |
+| Alchemy  | https://dashboard.alchemy.com/                     |
+| Moralis  | https://admin.moralis.io/register                  |
+| Mobula   | https://mobula.io/                                 |
 
 ### 4. Configure environment
 
