@@ -2,7 +2,7 @@ name: Scheduled Benchmark
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,10 +12,15 @@ jobs:
     steps:
       - name: Trigger benchmark
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DEPLOY_URL }}/api/cron?secret=${{ secrets.CRON_SECRET }}")
-          echo "HTTP status: $response"
-          if [ "$response" != "200" ]; then
-            echo "Benchmark trigger failed with status $response"
+          URL="${{ secrets.DEPLOY_URL }}/api/cron"
+          echo "Calling: ${URL%%/api/cron*}..."
+          response=$(curl -s -w "\n%{http_code}" -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP status: $http_code"
+          if [ "$http_code" != "200" ]; then
+            echo "Response body: $body"
+            echo "Benchmark trigger failed with status $http_code"
             exit 1
           fi
           echo "Benchmark triggered successfully"
