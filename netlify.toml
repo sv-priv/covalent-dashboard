@@ -2,5 +2,9 @@
   command = "npm run build"
   publish = ".next"
 
+[functions]
+  # Max timeout for sync functions (60s default; helps avoid 502 on long cron runs)
+  timeout = 60
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
