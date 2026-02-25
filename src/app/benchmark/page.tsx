@@ -42,8 +42,8 @@ export default function BenchmarkPage() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [walletAddress, setWalletAddress] = useState(DEFAULT_WALLET);
   const [chain, setChain] = useState(SUPPORTED_CHAINS[0].id);
-  const [iterations, setIterations] = useState(3);
-  const [concurrency, setConcurrency] = useState(2);
+  const [iterations, setIterations] = useState(2);
+  const [concurrency, setConcurrency] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState("");
   const [currentRun, setCurrentRun] = useState<BenchmarkRun | null>(null);
@@ -112,12 +112,24 @@ export default function BenchmarkPage() {
           body: JSON.stringify({ walletAddress, chain, providers: providerPayload, iterations, concurrency }),
         });
 
+        const text = await response.text();
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Balance benchmark failed");
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.error || "Balance benchmark failed");
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              throw new Error(`Balance benchmark failed (${response.status}). Server may have timed out.`);
+            }
+            throw e;
+          }
         }
-
-        const run: BenchmarkRun = await response.json();
+        let run: BenchmarkRun;
+        try {
+          run = JSON.parse(text);
+        } catch {
+          throw new Error("Invalid response from balance API. Server may have returned an error page.");
+        }
         setCurrentRun(run);
       }
 
@@ -131,12 +143,24 @@ export default function BenchmarkPage() {
           body: JSON.stringify({ chain, providers: providerPayload }),
         });
 
+        const pricingText = await pricingResponse.text();
         if (!pricingResponse.ok) {
-          const errorData = await pricingResponse.json();
-          throw new Error(errorData.error || "Pricing benchmark failed");
+          try {
+            const errorData = JSON.parse(pricingText);
+            throw new Error(errorData.error || "Pricing benchmark failed");
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              throw new Error(`Pricing benchmark failed (${pricingResponse.status}). Server may have timed out.`);
+            }
+            throw e;
+          }
         }
-
-        const pricingData: PricingBenchmarkRun = await pricingResponse.json();
+        let pricingData: PricingBenchmarkRun;
+        try {
+          pricingData = JSON.parse(pricingText);
+        } catch {
+          throw new Error("Invalid response from pricing API. Server may have returned an error page.");
+        }
         setPricingRun(pricingData);
       }
 
@@ -150,12 +174,24 @@ export default function BenchmarkPage() {
           body: JSON.stringify({ walletAddress, chain, providers: providerPayload }),
         });
 
+        const nftText = await nftResponse.text();
         if (!nftResponse.ok) {
-          const errorData = await nftResponse.json();
-          throw new Error(errorData.error || "NFT benchmark failed");
+          try {
+            const errorData = JSON.parse(nftText);
+            throw new Error(errorData.error || "NFT benchmark failed");
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              throw new Error(`NFT benchmark failed (${nftResponse.status}). Server may have timed out.`);
+            }
+            throw e;
+          }
         }
-
-        const nftData: NftBenchmarkRun = await nftResponse.json();
+        let nftData: NftBenchmarkRun;
+        try {
+          nftData = JSON.parse(nftText);
+        } catch {
+          throw new Error("Invalid response from NFT API. Server may have returned an error page.");
+        }
         setNftRun(nftData);
       }
 

@@ -10,8 +10,8 @@ export const maxDuration = 120;
 
 const DEFAULT_WALLET = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 const DEFAULT_CHAIN = "eth-mainnet";
-const DEFAULT_ITERATIONS = 5;
-const DEFAULT_CONCURRENCY = 3;
+const DEFAULT_ITERATIONS = 2;
+const DEFAULT_CONCURRENCY = 1;
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret") ||
