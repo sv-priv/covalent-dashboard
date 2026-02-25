@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ProviderName, PROVIDER_META, getPricingTokensForChain } from "@/lib/types";
+import { ProviderName, PROVIDER_META } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
-import { runPricingBenchmark } from "@/lib/pricing-benchmark";
 import { getEnvKey } from "@/lib/env-keys";
-import { saveBenchmarkRun, savePricingRun } from "@/lib/db";
+import { saveBenchmarkRun } from "@/lib/db";
 
 // Netlify sync functions max at 60s - keep workload minimal to avoid 502
 export const maxDuration = 60;
@@ -28,7 +27,6 @@ export async function GET(req: NextRequest) {
   if (providers.length === 0) {
     return NextResponse.json({ error: "No API keys configured" }, { status: 400 });
   }
-
   const summary: Record<string, unknown> = { timestamp: new Date().toISOString() };
 
   try {
@@ -61,25 +59,7 @@ export async function GET(req: NextRequest) {
       await saveBenchmarkRun(run, "scheduled");
       summary.balances = { providers: benchmarkResults.length, status: "completed" };
     }
-
-    // Use only 3 tokens to stay under 60s
-    const pricingTokens = getPricingTokensForChain(DEFAULT_CHAIN).slice(0, 3);
-    const { tokenResults, providerResults } = await runPricingBenchmark(
-      pricingTokens,
-      DEFAULT_CHAIN,
-      providers
-    );
-
-    const pricingRun = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      chain: DEFAULT_CHAIN,
-      tokenResults,
-      providerResults,
-      status: "completed" as const,
-    };
-    await savePricingRun(pricingRun, "scheduled");
-    summary.pricing = { providers: providerResults.length, status: "completed" };
+    // Pricing skipped in cron to avoid 502 timeout on Netlify
   } catch (err) {
     console.error("Cron: error:", err);
     summary.error = err instanceof Error ? err.message : "Unknown error";
