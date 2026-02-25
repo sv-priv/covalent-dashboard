@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Covalent API Benchmark Dashboard
 
-## Getting Started
+Benchmark and compare blockchain data API providers (Covalent GoldRush, Alchemy, Moralis, Mobula) across speed, data completeness, uptime, throughput, and pricing accuracy.
 
-First, run the development server:
+> **Note:** This is a basic version of the project. It runs as a single-page app with Token Balances and Pricing Accuracy benchmarks only. History is stored in the browser. For the full version with NFT benchmarks, database persistence, scheduled runs, and multi-page layout, see the `with-database` branch.
+
+## Run Locally
+
+### 1. Prerequisites
+
+- Node.js 18 or later
+- npm (or yarn, pnpm, bun)
+
+### 2. Clone and install
+
+```bash
+git clone <repository-url>
+cd covalent-dashboard
+npm install
+```
+
+### 3. Get API keys
+
+You need at least one provider API key to run benchmarks:
+
+| Provider | URL                                                |
+| -------- | -------------------------------------------------- |
+| Covalent | https://www.covalenthq.com/platform/auth/register/ |
+| Alchemy  | https://dashboard.alchemy.com/                     |
+| Moralis  | https://admin.moralis.io/register                  |
+| Mobula   | https://mobula.io/                                 |
+
+### 4. Configure environment
+
+Copy `.env.example` to `.env.local` and add your keys:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and fill in at least one provider key. Leave others blank if you don't have them:
+
+```env
+COVALENT_API_KEY=your_key_here
+ALCHEMY_API_KEY=
+MORALIS_API_KEY=
+MOBULA_API_KEY=
+```
+
+Keys in `.env.local` are used server-side only and are not exposed to the browser.
+
+### 5. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 6. Run a benchmark
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Click **API Keys** to add or verify your keys
+2. Choose scenarios: **Token Balances** and/or **Pricing Accuracy**
+3. Set wallet address (default: Vitalik's), network, iterations, and concurrency
+4. Click **Run Benchmark**
+5. View results in the tabs (Overview, Speed, Completeness, Uptime, Capacity, Pricing)
 
-## Learn More
+Recent runs are stored in the browser (localStorage) and shown in the history section.
 
-To learn more about Next.js, take a look at the following resources:
+## Build for production
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm run start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
