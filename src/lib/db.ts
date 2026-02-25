@@ -79,6 +79,21 @@ export async function getBenchmarkRuns(limit = 50, offset = 0) {
   return (data || []).map(dbRunToBenchmarkRun);
 }
 
+/** Returns true if a scheduled run exists within the last `withinMinutes` minutes. */
+export async function hasRecentScheduledRun(withinMinutes = 15): Promise<boolean> {
+  const cutoff = new Date(Date.now() - withinMinutes * 60 * 1000).toISOString();
+  const { data, error } = await requireSupabase()
+    .from("benchmark_runs")
+    .select("id")
+    .eq("trigger_type", "scheduled")
+    .eq("status", "completed")
+    .gte("created_at", cutoff)
+    .limit(1);
+
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
 export async function getBenchmarkRunById(id: string) {
   const { data, error } = await requireSupabase()
     .from("benchmark_runs")

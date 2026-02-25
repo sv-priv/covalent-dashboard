@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProviderName, PROVIDER_META } from "@/lib/types";
 import { benchmarkProvider } from "@/lib/benchmark";
 import { getEnvKey } from "@/lib/env-keys";
-import { saveBenchmarkRun } from "@/lib/db";
+import { saveBenchmarkRun, hasRecentScheduledRun } from "@/lib/db";
 
 // Netlify sync functions max at 60s - keep workload minimal to avoid 502
 export const maxDuration = 60;
@@ -11,6 +11,7 @@ const DEFAULT_WALLET = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 const DEFAULT_CHAIN = "eth-mainnet";
 const CRON_ITERATIONS = 1;
 const CRON_CONCURRENCY = 1;
+const DEDUP_WINDOW_MINUTES = 15;
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret") ||
@@ -27,6 +28,20 @@ export async function GET(req: NextRequest) {
   if (providers.length === 0) {
     return NextResponse.json({ error: "No API keys configured" }, { status: 400 });
   }
+
+  try {
+    const recent = await hasRecentScheduledRun(DEDUP_WINDOW_MINUTES);
+    if (recent) {
+      return NextResponse.json({
+        skipped: true,
+        reason: "A scheduled run already completed in the last 15 minutes",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error("Cron: dedup check failed, proceeding anyway:", err);
+  }
+
   const summary: Record<string, unknown> = { timestamp: new Date().toISOString() };
 
   try {
