@@ -56,6 +56,8 @@ function formatRelativeTime(ts: number) {
 export default function HistoryPage() {
   const [benchmarkRuns, setBenchmarkRuns] = useState<RunSummary[]>([]);
   const [pricingRuns, setPricingRuns] = useState<PricingRunSummary[]>([]);
+  const [totalBenchmarkRuns, setTotalBenchmarkRuns] = useState(0);
+  const [totalPricingRuns, setTotalPricingRuns] = useState(0);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"balances" | "pricing">("balances");
 
@@ -67,6 +69,8 @@ export default function HistoryPage() {
           const data = await res.json();
           setBenchmarkRuns(data.benchmarkRuns || []);
           setPricingRuns(data.pricingRuns || []);
+          setTotalBenchmarkRuns(data.totalBenchmarkRuns ?? 0);
+          setTotalPricingRuns(data.totalPricingRuns ?? 0);
         }
       } catch {} finally {
         setLoading(false);
@@ -79,14 +83,16 @@ export default function HistoryPage() {
     <div className="p-6 lg:p-8 max-w-7xl">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-8">
         <h1 className="text-xl font-bold text-[#1a1a1a]">History</h1>
-        <p className="text-sm text-[#78716C] mt-0.5">All past benchmark runs stored in Supabase</p>
+        <p className="text-sm text-[#78716C] mt-0.5">
+          Showing latest 50 of each · Dashboard analysis uses all runs
+        </p>
       </motion.div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#F5F3F0] border border-[#E8E5E0] rounded-xl p-1 w-fit">
         {([
-          { key: "balances" as const, label: "Token Balances", count: benchmarkRuns.length },
-          { key: "pricing" as const, label: "Pricing Accuracy", count: pricingRuns.length },
+          { key: "balances" as const, label: "Token Balances", count: totalBenchmarkRuns },
+          { key: "pricing" as const, label: "Pricing Accuracy", count: totalPricingRuns },
         ]).map(({ key, label, count }) => (
           <button
             key={key}

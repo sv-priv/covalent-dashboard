@@ -70,6 +70,8 @@ const fadeUp = {
 
 export default function DashboardHome() {
   const [latencyTrends, setLatencyTrends] = useState<TrendPoint[]>([]);
+  const [totalRuns, setTotalRuns] = useState<number>(0);
+  const [aggregatedStats, setAggregatedStats] = useState<{ provider: string; displayName: string; color: string; avgLatency: number; avgUptime: number }[]>([]);
   const [latestRun, setLatestRun] = useState<LatestRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,13 +80,15 @@ export default function DashboardHome() {
     async function load() {
       try {
         const [trendsRes, historyRes] = await Promise.all([
-          fetch("/api/trends?limit=30"),
+          fetch("/api/trends?limit=100"),
           fetch("/api/history?type=balances&limit=1"),
         ]);
 
         if (trendsRes.ok) {
           const trends = await trendsRes.json();
           setLatencyTrends(trends.latency || []);
+          setTotalRuns(trends.totalRuns ?? 0);
+          setAggregatedStats(trends.aggregatedStats || []);
         }
 
         if (historyRes.ok) {
@@ -248,31 +252,47 @@ export default function DashboardHome() {
             </motion.div>
           )}
 
-          {/* Quick Stats */}
-          {latestRun && (
+          {/* Quick Stats - uses aggregated data from all runs when available */}
+          {(latestRun || aggregatedStats.length > 0 || totalRuns > 0) && (
             <motion.div variants={fadeUp} className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
                 label="Total Runs"
-                value={String(latencyTrends.length || 1)}
+                value={String(totalRuns || 0)}
                 sub="benchmark executions"
                 delay={0}
               />
               <StatCard
                 label="Fastest Provider"
-                value={latestRun.results.reduce((a, b) => a.latency.avg < b.latency.avg ? a : b).displayName}
-                sub={`${latestRun.results.reduce((a, b) => a.latency.avg < b.latency.avg ? a : b).latency.avg}ms avg`}
+                value={
+                  aggregatedStats.length > 0
+                    ? aggregatedStats.reduce((a, b) => a.avgLatency < b.avgLatency ? a : b).displayName
+                    : latestRun?.results.reduce((a, b) => a.latency.avg < b.latency.avg ? a : b).displayName ?? "—"
+                }
+                sub={
+                  aggregatedStats.length > 0
+                    ? `${aggregatedStats.reduce((a, b) => a.avgLatency < b.avgLatency ? a : b).avgLatency}ms avg (all runs)`
+                    : latestRun
+                      ? `${latestRun.results.reduce((a, b) => a.latency.avg < b.latency.avg ? a : b).latency.avg}ms avg`
+                      : "—"
+                }
                 color="#FF4C3B"
                 delay={0.05}
               />
               <StatCard
                 label="Best Uptime"
-                value={`${Math.max(...latestRun.results.map((r) => r.reliability.successRate))}%`}
-                sub="success rate"
+                value={
+                  aggregatedStats.length > 0
+                    ? `${Math.max(...aggregatedStats.map((r) => r.avgUptime))}%`
+                    : latestRun
+                      ? `${Math.max(...latestRun.results.map((r) => r.reliability.successRate))}%`
+                      : "—"
+                }
+                sub={aggregatedStats.length > 0 ? "success rate (all runs)" : "success rate"}
                 delay={0.1}
               />
               <StatCard
                 label="Providers"
-                value={String(latestRun.results.length)}
+                value={String(aggregatedStats.length || latestRun?.results.length || 0)}
                 sub="actively benchmarked"
                 delay={0.15}
               />

@@ -68,6 +68,15 @@ export async function saveBenchmarkRun(
   return runRow.id;
 }
 
+export async function getBenchmarkRunsCount(): Promise<number> {
+  const { count, error } = await requireSupabase()
+    .from("benchmark_runs")
+    .select("*", { count: "exact" })
+    .limit(1);
+  if (error) throw error;
+  return typeof count === "number" ? count : 0;
+}
+
 export async function getBenchmarkRuns(limit = 50, offset = 0) {
   const { data, error } = await requireSupabase()
     .from("benchmark_runs")
@@ -195,6 +204,15 @@ export async function savePricingRun(
   return runRow.id;
 }
 
+export async function getPricingRunsCount(): Promise<number> {
+  const { count, error } = await requireSupabase()
+    .from("pricing_runs")
+    .select("*", { count: "exact" })
+    .limit(1);
+  if (error) throw error;
+  return typeof count === "number" ? count : 0;
+}
+
 export async function getPricingRuns(limit = 50, offset = 0) {
   const { data, error } = await requireSupabase()
     .from("pricing_runs")
@@ -245,9 +263,42 @@ function dbPricingRunToRun(row: Record<string, unknown>): PricingBenchmarkRun & 
   };
 }
 
+// ─── Aggregated stats (all runs) ───
+
+export async function getAggregatedProviderStats(): Promise<{
+  provider: string;
+  displayName: string;
+  color: string;
+  avgLatency: number;
+  avgUptime: number;
+}[]> {
+  const { data, error } = await requireSupabase()
+    .from("benchmark_results")
+    .select("provider, display_name, color, latency_avg, reliability_success_rate");
+  if (error) throw error;
+  const rows = data || [];
+  const byProvider = new Map<string, { displayName: string; color: string; latencies: number[]; uptimes: number[] }>();
+  for (const r of rows) {
+    const key = r.provider as string;
+    if (!byProvider.has(key)) {
+      byProvider.set(key, { displayName: r.display_name as string, color: r.color as string, latencies: [], uptimes: [] });
+    }
+    const agg = byProvider.get(key)!;
+    if (typeof r.latency_avg === "number") agg.latencies.push(r.latency_avg);
+    if (typeof r.reliability_success_rate === "number") agg.uptimes.push(r.reliability_success_rate);
+  }
+  return Array.from(byProvider.entries()).map(([provider, agg]) => ({
+    provider,
+    displayName: agg.displayName,
+    color: agg.color,
+    avgLatency: agg.latencies.length ? Math.round(agg.latencies.reduce((a, b) => a + b, 0) / agg.latencies.length) : 0,
+    avgUptime: agg.uptimes.length ? Math.round(agg.uptimes.reduce((a, b) => a + b, 0) / agg.uptimes.length) : 0,
+  }));
+}
+
 // ─── Trends ───
 
-export async function getLatencyTrends(limit = 30) {
+export async function getLatencyTrends(limit = 100) {
   const { data, error } = await requireSupabase()
     .from("benchmark_runs")
     .select("id, created_at, benchmark_results(provider, display_name, color, latency_avg, latency_p95, reliability_success_rate, throughput_rps, completeness_score)")
@@ -272,7 +323,7 @@ export async function getLatencyTrends(limit = 30) {
   }));
 }
 
-export async function getCoverageTrends(limit = 30) {
+export async function getCoverageTrends(limit = 100) {
   const { data, error } = await requireSupabase()
     .from("pricing_runs")
     .select("id, created_at, pricing_results(provider, display_name, color, coverage_pct, avg_deviation)")
