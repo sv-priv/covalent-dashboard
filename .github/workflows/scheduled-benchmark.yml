@@ -8,7 +8,7 @@ on:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    environment: covalent
+    # No environment: - using one can trigger Netlify deploys on workflow run
     steps:
       - name: Warm up (reduce cold start 502)
         run: |
@@ -17,22 +17,15 @@ jobs:
       - name: Trigger benchmark
         run: |
           URL="${{ secrets.DEPLOY_URL }}/api/cron"
-          echo "Calling: ${URL%%/api/cron*}..."
-          for attempt in 1 2 3; do
-            response=$(curl -s -w "\n%{http_code}" -m 70 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
-            http_code=$(echo "$response" | tail -n1)
-            body=$(echo "$response" | sed '$d')
-            echo "Attempt $attempt: HTTP $http_code"
-            if [ "$http_code" = "200" ] || [ "$http_code" = "202" ]; then
-              echo "Benchmark triggered successfully"
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              echo "Retrying in 15s..."
-              sleep 15
-            else
-              echo "Response body: $body"
-              echo "Benchmark trigger failed with status $http_code"
-              exit 1
-            fi
-          done
+          echo "Calling cron endpoint (single attempt)..."
+          response=$(curl -s -w "\n%{http_code}" -m 90 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP $http_code"
+          echo "$body"
+          if [ "$http_code" = "200" ] || [ "$http_code" = "202" ]; then
+            echo "Benchmark triggered successfully"
+            exit 0
+          fi
+          echo "Benchmark trigger failed with status $http_code"
+          exit 1
