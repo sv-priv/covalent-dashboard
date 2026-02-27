@@ -2,14 +2,24 @@ name: Scheduled Benchmark
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    # No environment: - using one can trigger Netlify deploys on workflow run
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.DEPLOY_URL }}" ]; then
+            echo "::error::DEPLOY_URL secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          echo "Secrets OK (DEPLOY_URL and CRON_SECRET are set)"
       - name: Warm up (reduce cold start 502)
         run: |
           curl -s -o /dev/null -m 15 "${{ secrets.DEPLOY_URL }}/" || true
@@ -17,8 +27,10 @@ jobs:
       - name: Trigger benchmark
         run: |
           URL="${{ secrets.DEPLOY_URL }}/api/cron"
-          echo "Calling cron endpoint (single attempt)..."
-          response=$(curl -s -w "\n%{http_code}" -m 90 -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" "$URL")
+          echo "Calling $URL ..."
+          response=$(curl -sS -w "\n%{http_code}" -m 90 \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "$URL") || { echo "::error::curl failed (check URL and network)"; exit 1; }
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "HTTP $http_code"
@@ -27,5 +39,5 @@ jobs:
             echo "Benchmark triggered successfully"
             exit 0
           fi
-          echo "Benchmark trigger failed with status $http_code"
+          echo "::error::Benchmark failed with HTTP $http_code"
           exit 1
